@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ==========================================
+// ۱. لایه کاربران و احراز هویت (Foundation)
+// ==========================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  status       String   @default("ACTIVE") // ACTIVE, SUSPENDED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile         Profile?
+  userRoles       UserRole[]
+  verifications   Verification[]
+  
+  listings        Listing[] @relation("SellerListings")
+  requests        Request[] @relation("BuyerRequests")
+  buyerOrders     Order[]   @relation("BuyerOrders")
+  sellerOrders    Order[]   @relation("SellerOrders")
+  reviewsWritten  Review[]  @relation("Reviewer")
+  reviewsReceived Review[]  @relation("Reviewee")
+  reports         Report[]
+  tickets         SupportTicket[]
+}
+
+model Profile {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  displayName   String?
+  bio           String?
+  avatarUrl     String?
+  isVerified    Boolean   @default(false)
+  plan          String    @default("FREE")
+  planExpiresAt DateTime?
+  country       String?
+  city          String?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Role {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  
+  userRoles   UserRole[]
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String   
+  status     String   @default("PENDING") 
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// ۲. لایه کاتالوگ و آگهی‌ها (Marketplace)
+// ==========================================
+
+model Category {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  description String?
+  
+  listings    Listing[]
+  products    Product[]
+  requests    Request[]
+}
+
+model Product {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  categoryId  String?
+  createdAt   DateTime  @default(now())
+
+  category    Category? @relation(fields: [categoryId], references: [id])
+  listings    Listing[]
+}
+
+model Listing {
+  id           String   @id @default(uuid())
+  sellerId     String
+  productId    String?
+  categoryId   String?
+  
+  title        String
+  description  String?
+  
+  priceType    String   @default("FIXED")
+  price        Float?   
+  currency     String   @default("IRR")
+  unit         String   @default("عدد") 
+  
+  stockStatus  String   @default("IN_STOCK")
+  stockQuantity Int     @default(0)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  seller       User     @relation("SellerListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  product      Product? @relation(fields: [productId], references: [id])
+  category     Category? @relation(fields: [categoryId], references: [id])
+  
+  items        ListingItem[]
+  media        ListingMedia[]
+  orderItems   OrderItem[]
+  matches      Match[]
+}
+
+model ListingItem {
+  id            String   @id @default(uuid())
+  listingId     String
+  title         String?  
+  priceOverride Float?  
+  stockStatus   String   @default("IN_STOCK")
+  metadata      String?  
+  
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model ListingMedia {
+  id           String   @id @default(uuid())
+  listingId    String
+  url          String
+  mediaType    String   @default("IMAGE")
+  createdAt    DateTime @default(now())
+
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Request {
+  id          String   @id @default(uuid())
+  buyerId     String
+  categoryId  String?
+  title       String
+  description String?
+  quantity    Int      @default(1)
+  unit        String   @default("عدد")
+  createdAt   DateTime @default(now())
+
+  buyer       User     @relation("BuyerRequests", fields: [buyerId], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [categoryId], references: [id])
+  matches     Match[]
+}
+
+model Match {
+  id          String   @id @default(uuid())
+  requestId   String
+  listingId   String
+  score       Float    
+  createdAt   DateTime @default(now())
+
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// ۳. لایه معاملات و مالی (Orders & Finance)
+// ==========================================
+
+model Order {
+  id               String   @id @default(uuid())
+  buyerId          String
+  sellerId         String
+  
+  snapshotPrice    Float
+  snapshotCurrency String
+  snapshotUnit     String
+  
+  totalAmount      Float
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  buyer            User     @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller           User     @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  items            OrderItem[]
+  transactions     Transaction[]
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  listingId     String
+  listingItemId String?  
+  
+  quantity      Int      @default(1)
+  unitPrice     Float
+  totalPrice    Float
+
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listing       Listing  @relation(fields: [listingId], references: [id])
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  orderId       String?  
+  amount        Float
+  currency      String   @default("IRR")
+  status        String   @default("PENDING")
+  paymentMethod String   @default("DIRECT")
+  createdAt     DateTime @default(now())
+
+  order         Order?   @relation(fields: [orderId], references: [id])
+  payments      Payment[]
+  revenues      RevenueRecord[]
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  transactionId String
+  gatewayName   String   
+  gatewayRef    String?  
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model RevenueRecord {
+  id            String   @id @default(uuid())
+  type          String   
+  amount        Float
+  currency      String   @default("IRR")
+  transactionId String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+// ==========================================
+// ۴. لایه اعتماد، نظارت و پشتیبانی
+// ==========================================
+
+model Review {
+  id          String   @id @default(uuid())
+  reviewerId  String
+  revieweeId  String
+  orderId     String?  
+  
+  rating      Int      @default(5) 
+  comment     String?
+  isVerified  Boolean  @default(false) 
+  createdAt   DateTime @default(now())
+
+  reviewer    User     @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee    User     @relation("Reviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  reporterId  String
+  targetId    String   
+  targetType  String   
+  reason      String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+
+  reporter    User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+}
+
+model SupportTicket {
+  id          String   @id @default(uuid())
+  userId      String
+  subject     String
+  description String
+  status      String   @default("OPEN")
+  priority    String   @default("NORMAL")
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// ۵. لایه ارتباطات، شهرها و تنظیمات
+// ==========================================
+model Message {
+  id         String   @id @default(uuid())
+  orderId    String?  
+  senderId   String
+  receiverId String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model City {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
+// 👈 جدول جدید تنظیمات که خطا داشت
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

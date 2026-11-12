@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-nikou-cream: #F5F2EA;
+  --color-nikou-dark: #101A17;
+  --color-nikou-green: #087F5B;
+  --color-nikou-greenLight: #E8EFE6;
+  --color-nikou-textMuted: #72786F;
+  --color-nikou-textLight: #AAB9AF;
+}
+
+body {
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  background-color: var(--color-nikou-cream);
+}
