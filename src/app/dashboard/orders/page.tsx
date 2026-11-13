@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { 
   BarChart3, Package, ShoppingCart, MessageSquare, 
   LogOut, RefreshCw, ShieldCheck, User, ClipboardList,
-  UserCircle, CheckCircle2, XCircle, Clock, Check
+  UserCircle, CheckCircle2, XCircle, Clock, Check, Star, X
 } from "lucide-react";
 
 export default function OrdersPage() {
@@ -18,16 +18,21 @@ export default function OrdersPage() {
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
+  // استیت‌های ثبت نظر
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   useEffect(() => {
     const id = localStorage.getItem('nikou_user_id');
     const role = localStorage.getItem('nikou_user_role');
     setCurrentUserId(id);
     setUserRole(role);
 
-    if (!id) {
-      router.push('/login');
-      return;
-    }
+    if (!id) { router.push('/login'); return; }
 
     fetch(`/api/profile?userId=${id}`, { cache: 'no-store' })
       .then(res => res.json())
@@ -37,16 +42,14 @@ export default function OrdersPage() {
           setDisplayName(data.displayName || 'کاربر نیکو');
           setAvatarUrl(data.avatarUrl || '');
         }
-      })
-      .catch(() => {});
+      }).catch(() => {});
 
     fetch(`/api/orders?userId=${id}&role=${role}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setOrders(data);
         setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
+      }).catch(() => setIsLoading(false));
   }, [router]);
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
@@ -58,23 +61,53 @@ export default function OrdersPage() {
       });
       if (res.ok) {
         setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      } else { alert("خطا در تغییر وضعیت"); }
+    } catch { alert("خطا در ارتباط با سرور"); }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedOrder || !currentUserId) return;
+    setIsSubmittingReview(true);
+    setReviewMessage("");
+
+    const revieweeId = selectedOrder.sellerId; 
+
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewerId: currentUserId,
+          revieweeId: revieweeId,
+          orderId: selectedOrder.id,
+          rating,
+          comment
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setReviewMessage("✅ نظر شما با موفقیت ثبت شد.");
+        setTimeout(() => {
+          setIsReviewModalOpen(false);
+          setReviewMessage("");
+          setComment("");
+        }, 2000);
       } else {
-        alert("خطا در تغییر وضعیت");
+        setReviewMessage("❌ " + data.error);
       }
-    } catch {
-      alert("خطا در ارتباط با سرور");
+    } catch (error) {
+      setReviewMessage("❌ خطا در ارتباط با سرور");
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/');
-  };
-
+  const handleLogout = () => { localStorage.clear(); router.push('/'); };
+  
   const switchRole = async () => {
     const currentRole = localStorage.getItem('nikou_user_role') || 'BUYER';
     const nextRole = currentRole === 'SELLER' ? 'BUYER' : 'SELLER';
-    
     if (currentUserId) {
       await fetch('/api/user/role', {
         method: 'POST',
@@ -97,8 +130,6 @@ export default function OrdersPage() {
 
   return (
     <div className="flex h-screen bg-nikou-cream font-sans" dir="rtl">
-      
-      {/* سایدبار */}
       <aside className="w-64 bg-nikou-dark text-white flex flex-col shadow-2xl z-20 hidden md:flex shrink-0">
         <div className="h-24 flex items-center justify-center border-b border-white/10 px-4">
           <Link href="/" className="flex items-center gap-3">
@@ -107,7 +138,6 @@ export default function OrdersPage() {
             <span className="text-[28px] font-extrabold text-white leading-none mt-1">نیکو</span>
           </Link>
         </div>
-        
         <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
           <Link href="/dashboard" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
             <BarChart3 size={20} /><span className="text-sm">داشبورد</span>
@@ -135,7 +165,6 @@ export default function OrdersPage() {
             <UserCircle size={20} /><span className="text-sm">پروفایل من</span>
           </Link>
         </nav>
-
         <div className="p-4 border-t border-white/10 flex flex-col gap-3">
           <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl">
             <div className="w-10 h-10 bg-nikou-green rounded-full flex items-center justify-center font-bold text-white shrink-0 overflow-hidden">
@@ -149,18 +178,15 @@ export default function OrdersPage() {
               <p className="text-xs text-nikou-textLight mt-1">{userRole === 'SELLER' ? 'فروشنده' : 'خریدار'}</p>
             </div>
           </div>
-
           <button onClick={switchRole} className="flex items-center justify-center gap-2 w-full bg-nikou-green hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl transition-all font-semibold text-xs">
             <RefreshCw size={14} /><span>{userRole === 'SELLER' ? "ورود به پنل خریدار" : "ورود به پنل فروشنده"}</span>
           </button>
-          
           <button onClick={handleLogout} className="flex items-center justify-center gap-2 w-full bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-xl transition-all font-medium text-xs">
             <LogOut size={14} /><span>خروج از حساب</span>
           </button>
         </div>
       </aside>
 
-      {/* بخش اصلی */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-24 bg-[#FFFEFA] border-b border-[#DCDDD2] flex items-center px-8 shrink-0">
           <h1 className="text-2xl font-bold text-nikou-dark flex items-center gap-2">
@@ -214,31 +240,31 @@ export default function OrdersPage() {
                         <td className="px-6 py-4 text-sm text-nikou-textMuted">
                           {otherPartyEmail || "نامشخص"}
                         </td>
-                        <td className="px-6 py-4">
-                          {getStatusBadge(o.status)}
-                        </td>
+                        <td className="px-6 py-4">{getStatusBadge(o.status)}</td>
                         <td className="px-6 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {userRole === 'SELLER' && o.status === 'PENDING' && (
                               <>
-                                <button 
-                                  onClick={() => handleStatusChange(o.id, 'ACCEPTED')}
-                                  className="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white px-3 py-2 rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
-                                >
+                                <button onClick={() => handleStatusChange(o.id, 'ACCEPTED')} className="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white px-3 py-2 rounded-lg transition-colors text-xs font-bold flex items-center gap-1">
                                   <Check size={14} /> تایید
                                 </button>
-                                <button 
-                                  onClick={() => handleStatusChange(o.id, 'REJECTED')}
-                                  className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-2 rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
-                                >
+                                <button onClick={() => handleStatusChange(o.id, 'REJECTED')} className="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-3 py-2 rounded-lg transition-colors text-xs font-bold flex items-center gap-1">
                                   <XCircle size={14} /> رد
                                 </button>
                               </>
                             )}
-                            <Link 
-                              href="/dashboard/messages"
-                              className="bg-[#F5F2EA] text-nikou-dark border border-[#DCDDD2] hover:bg-nikou-green hover:text-white hover:border-nikou-green px-3 py-2 rounded-lg transition-colors text-xs font-bold"
-                            >
+                            
+                            {/* 👈 دکمه ثبت نظر برای خریدار (فقط وقتی سفارش تایید شده) */}
+                            {userRole === 'BUYER' && o.status === 'ACCEPTED' && (
+                              <button 
+                                onClick={() => { setSelectedOrder(o); setIsReviewModalOpen(true); }}
+                                className="bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white px-3 py-2 rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
+                              >
+                                <Star size={14} /> ثبت نظر
+                              </button>
+                            )}
+
+                            <Link href="/dashboard/messages" className="bg-[#F5F2EA] text-nikou-dark border border-[#DCDDD2] hover:bg-nikou-green hover:text-white hover:border-nikou-green px-3 py-2 rounded-lg transition-colors text-xs font-bold">
                               گفتگو
                             </Link>
                           </div>
@@ -252,6 +278,55 @@ export default function OrdersPage() {
           </div>
         </div>
       </main>
+
+      {/* 👈 مودال ثبت نظر */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl p-8 w-full max-w-md shadow-2xl relative">
+            <button onClick={() => setIsReviewModalOpen(false)} className="absolute top-4 left-4 text-nikou-textMuted hover:text-red-500">
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold text-nikou-dark mb-2">ثبت نظر و امتیاز</h2>
+            <p className="text-sm text-nikou-textMuted mb-6">تجربه خود از خرید کالای <span className="font-bold text-nikou-dark">{selectedOrder?.items?.[0]?.listing?.title}</span> را ثبت کنید.</p>
+            
+            <div className="flex flex-col items-center gap-2 mb-6">
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button key={star} onClick={() => setRating(star)} className="focus:outline-none transition-transform hover:scale-110">
+                    <Star size={32} className={star <= rating ? "text-amber-400 fill-amber-400" : "text-gray-300"} />
+                  </button>
+                ))}
+              </div>
+              <span className="text-sm font-semibold text-nikou-dark mt-1">{rating} از ۵ ستاره</span>
+            </div>
+
+            <textarea
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="نظر خود را درباره کیفیت کالا و رفتار فروشنده بنویسید..."
+              className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green resize-none bg-[#F5F2EA] mb-4"
+            ></textarea>
+
+            {reviewMessage && (
+              <div className={`p-3 rounded-xl text-center text-sm font-bold mb-4 ${reviewMessage.includes('✅') ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                {reviewMessage}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setIsReviewModalOpen(false)} className="px-6 py-3 rounded-xl border border-[#DCDDD2] text-nikou-dark text-sm font-semibold hover:bg-gray-50">انصراف</button>
+              <button 
+                onClick={handleSubmitReview} 
+                disabled={isSubmittingReview}
+                className="bg-nikou-green text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+              >
+                {isSubmittingReview ? "در حال ثبت..." : "ثبت نظر"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

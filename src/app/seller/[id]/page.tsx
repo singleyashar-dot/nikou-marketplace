@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { 
   Package, ShieldCheck, MapPin, Calendar, 
-  ChevronLeft, Store, ArrowRight, BadgeCheck 
+  ChevronLeft, Store, ArrowRight, BadgeCheck, Star 
 } from "lucide-react";
 
 export default function SellerStorePage() {
@@ -15,23 +15,35 @@ export default function SellerStorePage() {
   const [seller, setSeller] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  // استیت‌های نظرات
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState("0");
+  const [totalReviews, setTotalReviews] = useState(0);
 
   useEffect(() => {
     if (id) {
       fetch(`/api/seller/${id}`, { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
-          if (data.error) {
-            setError(data.error);
-          } else {
-            setSeller(data);
-          }
+          if (data.error) setError(data.error);
+          else setSeller(data);
           setIsLoading(false);
         })
         .catch(() => {
           setError("خطا در ارتباط با سرور");
           setIsLoading(false);
         });
+
+      fetch(`/api/reviews?sellerId=${id}`, { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.reviews) {
+            setReviews(data.reviews);
+            setAverageRating(data.averageRating);
+            setTotalReviews(data.totalReviews);
+          }
+        }).catch(() => {});
     }
   }, [id]);
 
@@ -46,8 +58,6 @@ export default function SellerStorePage() {
 
   return (
     <div className="min-h-screen bg-nikou-cream font-sans flex flex-col" dir="rtl">
-      
-      {/* هدر بالای سایت */}
       <header className="bg-[#FFFEFA] border-b border-[#DCDDD2] sticky top-0 z-50 h-20 flex items-center">
         <div className="max-w-[1440px] mx-auto w-full px-16 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
@@ -62,7 +72,6 @@ export default function SellerStorePage() {
         </div>
       </header>
 
-      {/* نوار مسیر */}
       <div className="bg-[#FFFEFA] border-b border-[#DCDDD2] py-3">
         <div className="max-w-[1440px] mx-auto px-16 flex items-center gap-2 text-[13px] text-nikou-textMuted">
           <Link href="/" className="hover:text-nikou-green">بازارگاه</Link>
@@ -71,22 +80,18 @@ export default function SellerStorePage() {
         </div>
       </div>
 
-      {/* محتوای اصلی */}
       <main className="flex-1 max-w-[1440px] w-full mx-auto px-16 py-10">
         
-        {/* 👈 هدر پروفایل فروشنده (مینیمال و شیک) */}
+        {/* هدر پروفایل فروشنده */}
         <div className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between shadow-sm mb-10 gap-6">
           <div className="flex items-center gap-5">
             <div className="w-20 h-20 bg-gradient-to-br from-[#E8EFE6] to-[#DCDDD2] rounded-full flex items-center justify-center text-nikou-green border-4 border-white shadow-sm shrink-0">
               <Store size={32} />
             </div>
-            
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-nikou-dark">{seller.displayName}</h1>
-                {seller.isVerified && (
-                  <BadgeCheck size={22} className="text-blue-500" fill="#EFF6FF" />
-                )}
+                {seller.isVerified && <BadgeCheck size={22} className="text-blue-500" fill="#EFF6FF" />}
               </div>
               
               <div className="flex flex-wrap items-center gap-4 text-[13px] text-nikou-textMuted mt-1">
@@ -99,16 +104,21 @@ export default function SellerStorePage() {
             </div>
           </div>
 
-          {seller.isVerified && (
-            <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-100">
-              <ShieldCheck size={18} />
-              فروشنده تایید شده
+          <div className="flex items-center gap-4">
+            {seller.isVerified && (
+              <div className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-blue-100">
+                <ShieldCheck size={18} /> فروشنده تایید شده
+              </div>
+            )}
+            {/* 👈 نمایش میانگین امتیاز */}
+            <div className="bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-amber-100">
+              <Star size={18} fill="currentColor" /> {averageRating} از ۵ ({totalReviews} نظر)
             </div>
-          )}
+          </div>
         </div>
 
         {/* لیست کالاهای فروشنده */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 mb-12">
           <div className="flex justify-between items-end border-b border-[#DCDDD2] pb-4">
             <h2 className="text-[24px] font-bold text-nikou-dark">کالاهای این فروشنده</h2>
             <span className="text-[14px] text-nikou-textMuted">مجموع {seller.listings.length} کالا</span>
@@ -147,6 +157,41 @@ export default function SellerStorePage() {
                   </Link>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* 👈 بخش نمایش نظرات */}
+        <div className="flex flex-col gap-6">
+          <div className="flex justify-between items-end border-b border-[#DCDDD2] pb-4">
+            <h2 className="text-[24px] font-bold text-nikou-dark">نظرات خریداران</h2>
+          </div>
+
+          {reviews.length === 0 ? (
+            <div className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl text-center py-10 text-nikou-textMuted text-sm">
+              هنوز هیچ نظری برای این فروشنده ثبت نشده است.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviews.map((rev) => (
+                <div key={rev.id} className="bg-[#FFFEFA] border border-[#DCDDD2] p-5 rounded-2xl flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-[#E8EFE6] rounded-full flex items-center justify-center text-nikou-green font-bold text-xs">
+                        {rev.reviewer?.profile?.displayName?.charAt(0) || 'ک'}
+                      </div>
+                      <span className="text-sm font-bold text-nikou-dark">{rev.reviewer?.profile?.displayName || 'خریدار'}</span>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star key={s} size={14} className={s <= rev.rating ? "text-amber-400 fill-amber-400" : "text-gray-200"} />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-sm text-[#59675E] leading-relaxed">{rev.comment || 'بدون توضیحات'}</p>
+                  <span className="text-[11px] text-nikou-textMuted text-left">{new Date(rev.createdAt).toLocaleDateString('fa-IR')}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
