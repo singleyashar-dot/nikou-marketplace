@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { 
   BarChart3, Package, ShoppingCart, MessageSquare, 
   LogOut, RefreshCw, ShieldCheck, User, ClipboardList,
-  UserCircle, ArrowRight, Wallet, TrendingUp
+  UserCircle, ArrowRight, Wallet, TrendingUp, Bell
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -16,7 +16,6 @@ export default function DashboardPage() {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
-  // آمار فرضی برای نمایش
   const [stats, setStats] = useState({ orders: 0, products: 0 });
 
   useEffect(() => {
@@ -82,7 +81,6 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen bg-nikou-cream font-sans" dir="rtl">
       
-      {/* سایدبار */}
       <aside className="w-64 bg-nikou-dark text-white flex flex-col shadow-2xl z-20 hidden md:flex shrink-0">
         <div className="h-24 flex items-center justify-center border-b border-white/10 px-4">
           <Link href="/" className="flex items-center gap-3">
@@ -115,6 +113,12 @@ export default function DashboardPage() {
           <Link href="/dashboard/messages" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
             <MessageSquare size={20} /><span className="text-sm">پیام‌ها</span>
           </Link>
+          
+          {/* 👈 لینک اعلانات اضافه شد */}
+          <Link href="/dashboard/notifications" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
+            <Bell size={20} /><span className="text-sm">اعلانات</span>
+          </Link>
+
           <Link href="/dashboard/profile" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
             <UserCircle size={20} /><span className="text-sm">پروفایل من</span>
           </Link>
@@ -144,7 +148,6 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* بخش اصلی */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-24 bg-[#FFFEFA] border-b border-[#DCDDD2] flex items-center justify-between px-8 shrink-0">
           <h1 className="text-2xl font-bold text-nikou-dark flex items-center gap-2">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { 
   BarChart3, Package, ShoppingCart, MessageSquare, 
   LogOut, RefreshCw, ShieldCheck, User, Send,
-  MessageCircle, UserCircle, ClipboardList, ArrowRight
+  MessageCircle, UserCircle, ClipboardList, ArrowRight, Bell
 } from "lucide-react";
 
 export default function MessagesPage() {
@@ -20,7 +20,7 @@ export default function MessagesPage() {
   const [isVerified, setIsVerified] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [showMobileChat, setShowMobileChat] = useState(false); // 👈 استیت جدید برای موبایل
+  const [showMobileChat, setShowMobileChat] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -130,7 +130,6 @@ export default function MessagesPage() {
   return (
     <div className="flex h-screen bg-nikou-cream font-sans overflow-hidden" dir="rtl">
       
-      {/* سایدبار (در موبایل مخفی می‌شود) */}
       <aside className="w-64 bg-nikou-dark text-white flex-col shadow-2xl z-20 hidden md:flex shrink-0">
         <div className="h-24 flex items-center justify-center border-b border-white/10 px-4">
           <Link href="/" className="flex items-center gap-3">
@@ -163,6 +162,12 @@ export default function MessagesPage() {
           <Link href="/dashboard/messages" className="flex items-center gap-3 bg-white/10 text-white px-4 py-3 rounded-xl cursor-pointer">
             <MessageSquare size={20} className="text-nikou-green" /><span className="font-semibold text-sm">پیام‌ها</span>
           </Link>
+          
+          {/* 👈 لینک اعلانات اضافه شد */}
+          <Link href="/dashboard/notifications" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
+            <Bell size={20} /><span className="text-sm">اعلانات</span>
+          </Link>
+
           <Link href="/dashboard/profile" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
             <UserCircle size={20} /><span className="text-sm">پروفایل من</span>
           </Link>
@@ -192,10 +197,7 @@ export default function MessagesPage() {
         </div>
       </aside>
 
-      {/* بخش اصلی چت */}
       <main className="flex-1 flex overflow-hidden">
-        
-        {/* لیست گفتگوها (در موبایل و دسکتاپ مدیریت می‌شود) */}
         <div className={`w-full md:w-80 bg-[#FFFEFA] border-l border-[#DCDDD2] flex-col shrink-0 ${showMobileChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="h-24 border-b border-[#DCDDD2] flex items-center px-6 bg-[#FFFEFA]">
             <h2 className="text-xl font-bold text-nikou-dark flex items-center gap-2">
@@ -217,7 +219,7 @@ export default function MessagesPage() {
                 return (
                   <div 
                     key={o.id} 
-                    onClick={() => { setSelectedOrder(o); setShowMobileChat(true); }} // 👈 رفتن به چت در موبایل
+                    onClick={() => { setSelectedOrder(o); setShowMobileChat(true); }}
                     className={`p-4 rounded-xl cursor-pointer transition-all flex items-center gap-3 border ${
                       isSelected 
                         ? 'bg-[#E8EFE6] border-nikou-green shadow-sm' 
@@ -242,13 +244,11 @@ export default function MessagesPage() {
           </div>
         </div>
 
-        {/* محیط چت (در موبایل و دسکتاپ مدیریت می‌شود) */}
         <div className={`w-full md:flex-1 flex-col bg-[#F5F2EA] relative ${showMobileChat ? 'flex' : 'hidden md:flex'}`}>
           {selectedOrder ? (
             <>
               <div className="h-24 bg-[#FFFEFA] border-b border-[#DCDDD2] flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shadow-sm shrink-0">
                 <div className="flex items-center gap-4">
-                  {/* 👈 دکمه بازگشت در موبایل */}
                   <button onClick={() => setShowMobileChat(false)} className="md:hidden w-10 h-10 flex items-center justify-center bg-[#F5F2EA] rounded-xl text-nikou-dark">
                     <ArrowRight size={20} />
                   </button>

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { 
   Search, ChevronDown, MapPin, Package, ArrowLeft, 
   ClipboardList, ShieldCheck, Banknote, Contact,
-  ChevronRight, ChevronLeft, Globe
+  ChevronRight, ChevronLeft, Globe, ArrowRight
 } from "lucide-react";
 
 export default function PublicMarketplacePage() {
@@ -14,24 +14,23 @@ export default function PublicMarketplacePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [countries, setCountries] = useState<any[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("همه دسته‌ها");
   const [selectedCity, setSelectedCity] = useState("همه مناطق");
-  const [selectedCountry, setSelectedCountry] = useState("همه کشورها"); // 👈 استیت کشور
+  const [selectedCountry, setSelectedCountry] = useState("همه کشورها");
   const [sortOption, setSortOption] = useState("newest");
   
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isCityOpen, setIsCityOpen] = useState(false);
-  const [isCountryOpen, setIsCountryOpen] = useState(false); // 👈 استیت باز شدن منوی کشور
+  const [isCountryOpen, setIsCountryOpen] = useState(false);
   
   const sliderRef = useRef<HTMLDivElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
-  const countryRef = useRef<HTMLDivElement>(null); // 👈 رفرنس منوی کشور
-
-  const countriesList = ["ایران", "امارات", "چین", "ترکیه", "آلمان"];
+  const countryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/products', { cache: 'no-store' })
@@ -53,6 +52,13 @@ export default function PublicMarketplacePage() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setCities(data);
+      })
+      .catch(() => {});
+
+    fetch('/api/countries', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCountries(data);
       })
       .catch(() => {});
   }, []);
@@ -79,6 +85,8 @@ export default function PublicMarketplacePage() {
     }
   };
 
+  const internationalCountries = countries.filter(c => c.code !== 'IR' && c.name !== 'ایران');
+
   let filtered = products.filter(p => {
     const categoryTitle = p.category?.title || "عمومی";
     
@@ -86,8 +94,6 @@ export default function PublicMarketplacePage() {
                         categoryTitle.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCategory = selectedCategory === "همه دسته‌ها" ? true : categoryTitle === selectedCategory;
     const matchCity = selectedCity === "همه مناطق" ? true : p.seller?.profile?.city === selectedCity;
-    
-    // 👈 فیلتر کشور
     const matchCountry = selectedCountry === "همه کشورها" ? true : p.country === selectedCountry;
     
     return matchSearch && matchCategory && matchCity && matchCountry;
@@ -194,7 +200,6 @@ export default function PublicMarketplacePage() {
               )}
             </div>
 
-            {/* 👈 منوی جدید کشورها */}
             <div className="relative" ref={countryRef}>
               <div onClick={() => { setIsCountryOpen(!isCountryOpen); setIsCategoryOpen(false); setIsCityOpen(false); }} className="flex items-center gap-3 px-4 border-l border-gray-300 cursor-pointer hover:text-nikou-green transition-colors">
                 <ChevronDown size={16} className="text-nikou-dark" />
@@ -204,8 +209,10 @@ export default function PublicMarketplacePage() {
               {isCountryOpen && (
                 <div className="absolute top-10 right-0 w-48 bg-white border border-[#DCDDD2] rounded-xl shadow-xl py-2 z-50 text-nikou-dark">
                   <div onClick={() => { setSelectedCountry("همه کشورها"); setIsCountryOpen(false); }} className="px-4 py-2 hover:bg-nikou-cream cursor-pointer text-sm text-nikou-dark">همه کشورها</div>
-                  {countriesList.map((country, i) => (
-                    <div key={i} onClick={() => { setSelectedCountry(country); setIsCountryOpen(false); }} className="px-4 py-2 hover:bg-nikou-cream cursor-pointer text-sm text-nikou-dark">{country}</div>
+                  {countries.map((c: any, i) => (
+                    <div key={i} onClick={() => { setSelectedCountry(c.name); setIsCountryOpen(false); }} className="px-4 py-2 hover:bg-nikou-cream cursor-pointer text-sm text-nikou-dark flex items-center gap-2">
+                      <span>{c.flag}</span> {c.name}
+                    </div>
                   ))}
                 </div>
               )}
@@ -223,6 +230,42 @@ export default function PublicMarketplacePage() {
         </div>
       </section>
 
+      {/* 👈 بخش بازارهای بین‌المللی (طراحی لوکس‌تر) */}
+      {internationalCountries.length > 0 && (
+        <section className="max-w-360 mx-auto px-16 py-10 w-full">
+          <div className="flex justify-between items-end mb-6 w-full">
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-nikou-textMuted text-[13px]">خرید مستقیم از بازارهای جهانی</span>
+              <h2 className="text-[28px] font-semibold text-nikou-dark">بازارهای بین‌المللی</h2>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {internationalCountries.map((c: any, i) => (
+              <Link 
+                key={i} 
+                href={`/country/${c.code}`} 
+                className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl p-5 flex items-center justify-between hover:border-nikou-green hover:shadow-lg transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#F5F2EA] to-[#E8EFE6] flex items-center justify-center text-[15px] font-black text-nikou-dark border border-[#DCDDD2] group-hover:border-nikou-green group-hover:text-nikou-green transition-colors shrink-0 shadow-sm">
+                    {c.code}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <h3 className="font-bold text-nikou-dark text-[18px]">بازار {c.name}</h3>
+                    <span className="text-[12px] text-nikou-textMuted group-hover:text-nikou-green transition-colors">مشاهده کالاهای {c.name}</span>
+                  </div>
+                </div>
+                <div className="w-9 h-9 rounded-full bg-[#F5F2EA] flex items-center justify-center text-nikou-dark group-hover:bg-nikou-green group-hover:text-white transition-colors shrink-0">
+                  <ArrowLeft size={16} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* دسته‌بندی‌ها */}
       <section className="max-w-360 mx-auto px-16 py-10 w-full">
         <div className="flex justify-between items-center mb-6 w-full">
           <h2 className="text-[28px] font-semibold text-nikou-dark">خرید بر اساس دسته‌بندی</h2>
@@ -255,6 +298,7 @@ export default function PublicMarketplacePage() {
         </div>
       </section>
 
+      {/* کالاها */}
       <section id="market-products" className="max-w-360 mx-auto px-16 py-8 w-full">
         <div className="flex justify-between items-end mb-8 w-full">
           <div className="flex flex-col items-end gap-1.5">
@@ -286,8 +330,6 @@ export default function PublicMarketplacePage() {
               const mediaUrl = p.media && p.media.length > 0 ? p.media[0].url : null;
               return (
               <Link href={`/products/${p.id}`} key={p.id} className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl overflow-hidden flex flex-col group hover:shadow-lg transition-all duration-300 relative">
-                
-                {/* 👈 بج کشور روی عکس کالا */}
                 {p.country && p.country !== 'ایران' && (
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-nikou-dark text-[11px] px-3 py-1 rounded-full shadow-sm z-10 flex items-center gap-1 font-bold border border-gray-200">
                     <Globe size={12} className="text-blue-500" />
@@ -324,6 +366,7 @@ export default function PublicMarketplacePage() {
         )}
       </section>
 
+      {/* اصول اعتماد */}
       <section className="bg-nikou-dark py-16 w-full mt-10">
         <div className="max-w-360 mx-auto px-16 flex flex-col gap-10">
           <div className="flex justify-between items-center w-full">

@@ -26,6 +26,7 @@ model User {
   reviewsReceived Review[]  @relation("Reviewee")
   reports         Report[]
   tickets         SupportTicket[]
+  notifications   Notification[] // 👈 رابطه جدید
 }
 
 model Profile {
@@ -94,7 +95,7 @@ model Listing {
   categoryId   String?
   title        String
   description  String?
-  country      String   @default("ایران") // 👈 فیلد جدید برای کشور
+  country      String   @default("ایران")
   priceType    String   @default("FIXED")
   price        Float?
   currency     String   @default("IRR")
@@ -287,4 +288,24 @@ model ContactMessage {
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model Country {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  flag      String?
+  createdAt DateTime @default(now())
+}
+
+// 👈 مدل جدید اعلانات
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
