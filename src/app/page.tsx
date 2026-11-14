@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { 
   Search, ChevronDown, MapPin, Package, ArrowLeft, 
   ClipboardList, ShieldCheck, Banknote, Contact,
-  ChevronRight, ChevronLeft, Globe, ArrowRight
+  ChevronRight, ChevronLeft, Globe
 } from "lucide-react";
 
 export default function PublicMarketplacePage() {
@@ -15,6 +15,7 @@ export default function PublicMarketplacePage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [countries, setCountries] = useState<any[]>([]); 
+  const [settings, setSettings] = useState<any>({}); // 👈 استیت تنظیمات
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,34 +34,27 @@ export default function PublicMarketplacePage() {
   const countryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('/api/products', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setProducts(data);
-        setIsLoading(false);
-      })
-      .catch(() => setIsLoading(false));
+    fetch('/api/products', { cache: 'no-store' }).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setProducts(data);
+      setIsLoading(false);
+    }).catch(() => setIsLoading(false));
 
-    fetch('/api/categories', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setCategories(data);
-      })
-      .catch(() => {});
+    fetch('/api/categories', { cache: 'no-store' }).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setCategories(data);
+    }).catch(() => {});
 
-    fetch('/api/cities', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setCities(data);
-      })
-      .catch(() => {});
+    fetch('/api/cities', { cache: 'no-store' }).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setCities(data);
+    }).catch(() => {});
 
-    fetch('/api/countries', { cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setCountries(data);
-      })
-      .catch(() => {});
+    fetch('/api/countries', { cache: 'no-store' }).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setCountries(data);
+    }).catch(() => {});
+
+    // 👈 دریافت تنظیمات متنی
+    fetch('/api/settings', { cache: 'no-store' }).then(res => res.json()).then(data => {
+      if (data && !data.error) setSettings(data);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -69,7 +63,6 @@ export default function PublicMarketplacePage() {
       if (cityRef.current && !cityRef.current.contains(event.target as Node)) setIsCityOpen(false);
       if (countryRef.current && !countryRef.current.contains(event.target as Node)) setIsCountryOpen(false);
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -85,29 +78,21 @@ export default function PublicMarketplacePage() {
     }
   };
 
-  const internationalCountries = countries.filter(c => c.code !== 'IR' && c.name !== 'ایران');
+  const internationalMarkets = countries.filter(c => c.code !== 'IR' && c.name !== 'ایران');
 
   let filtered = products.filter(p => {
     const categoryTitle = p.category?.title || "عمومی";
-    
-    const matchSearch = p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        categoryTitle.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || categoryTitle.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCategory = selectedCategory === "همه دسته‌ها" ? true : categoryTitle === selectedCategory;
     const matchCity = selectedCity === "همه مناطق" ? true : p.seller?.profile?.city === selectedCity;
     const matchCountry = selectedCountry === "همه کشورها" ? true : p.country === selectedCountry;
-    
     return matchSearch && matchCategory && matchCity && matchCountry;
   });
 
-  if (sortOption === "cheapest") {
-    filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-  } else if (sortOption === "expensive") {
-    filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-  } else if (sortOption === "inStock") {
-    filtered = filtered.filter(p => p.stockQuantity > 0);
-  } else {
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
+  if (sortOption === "cheapest") filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
+  else if (sortOption === "expensive") filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
+  else if (sortOption === "inStock") filtered = filtered.filter(p => p.stockQuantity > 0);
+  else filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="min-h-screen bg-nikou-cream font-sans" dir="rtl">
@@ -140,12 +125,16 @@ export default function PublicMarketplacePage() {
                 <span>بازارگاه تخصصی تجارت B2B</span>
                 <span className="w-1.5 h-1.5 bg-nikou-greenLight rounded-full"></span>
               </div>
-              <h1 className="text-[62px] font-bold leading-normal text-right text-nikou-cream">
-                بازارگاه جامع تجارت <br /> برای رشد کسب‌وکار شما
-              </h1>
+              
+              {/* 👈 متن داینامیک */}
+              <h1 
+                className="text-[62px] font-bold leading-normal text-right text-nikou-cream"
+                dangerouslySetInnerHTML={{ __html: settings.hero_title || "بازارگاه جامع تجارت <br /> برای رشد کسب‌وکار شما" }}
+              />
               <p className="text-[18px] text-nikou-textLight text-right leading-relaxed">
-                اتصال امن خریداران و فروشندگان در بزرگترین انبار مجازی. تجربه‌ای متفاوت از معامله عمده با تضمین کیفیت و امنیت.
+                {settings.hero_subtitle || "اتصال امن خریداران و فروشندگان در بزرگترین انبار مجازی. تجربه‌ای متفاوت از معامله عمده با تضمین کیفیت و امنیت."}
               </p>
+              
               <div className="flex gap-4 mt-4">
                 <button onClick={handleStartBuying} className="bg-nikou-green text-white px-8 py-4 rounded-lg font-semibold hover:bg-emerald-700 transition-all">شروع خرید</button>
                 <Link href="/dashboard/products/new" className="bg-transparent border border-white/20 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/5 transition-all">شروع فروش</Link>
@@ -230,29 +219,27 @@ export default function PublicMarketplacePage() {
         </div>
       </section>
 
-      {/* 👈 بخش بازارهای بین‌المللی (طراحی لوکس‌تر) */}
-      {internationalCountries.length > 0 && (
+      {internationalMarkets.length > 0 && (
         <section className="max-w-360 mx-auto px-16 py-10 w-full">
           <div className="flex justify-between items-end mb-6 w-full">
             <div className="flex flex-col items-end gap-1">
-              <span className="text-nikou-textMuted text-[13px]">خرید مستقیم از بازارهای جهانی</span>
+              <span className="text-nikou-textMuted text-[13px]">خرید مستقیم از بازارهای جهانی و بازارچه‌های مرزی</span>
               <h2 className="text-[28px] font-semibold text-nikou-dark">بازارهای بین‌المللی</h2>
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {internationalCountries.map((c: any, i) => (
-              <Link 
-                key={i} 
-                href={`/country/${c.code}`} 
-                className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl p-5 flex items-center justify-between hover:border-nikou-green hover:shadow-lg transition-all group"
-              >
+            {internationalMarkets.map((c: any, i) => (
+              <Link key={i} href={`/country/${c.code}`} className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl p-5 flex items-center justify-between hover:border-nikou-green hover:shadow-lg transition-all group">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#F5F2EA] to-[#E8EFE6] flex items-center justify-center text-[15px] font-black text-nikou-dark border border-[#DCDDD2] group-hover:border-nikou-green group-hover:text-nikou-green transition-colors shrink-0 shadow-sm">
                     {c.code}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <h3 className="font-bold text-nikou-dark text-[18px]">بازار {c.name}</h3>
+                    <h3 className="font-bold text-nikou-dark text-[18px] flex items-center gap-2">
+                      {c.name}
+                      {c.type === 'BORDER_MARKET' && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">بازارچه مرزی</span>}
+                    </h3>
                     <span className="text-[12px] text-nikou-textMuted group-hover:text-nikou-green transition-colors">مشاهده کالاهای {c.name}</span>
                   </div>
                 </div>
@@ -265,7 +252,6 @@ export default function PublicMarketplacePage() {
         </section>
       )}
 
-      {/* دسته‌بندی‌ها */}
       <section className="max-w-360 mx-auto px-16 py-10 w-full">
         <div className="flex justify-between items-center mb-6 w-full">
           <h2 className="text-[28px] font-semibold text-nikou-dark">خرید بر اساس دسته‌بندی</h2>
@@ -282,11 +268,7 @@ export default function PublicMarketplacePage() {
         
         <div ref={sliderRef} className="flex overflow-x-auto gap-4 pb-4 snap-x" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {categories.length > 0 ? categories.map((cat: any, i) => (
-            <div 
-              key={i} 
-              onClick={() => { setSelectedCategory(cat.title); handleStartBuying(); }}
-              className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-xl p-4 flex flex-col items-center justify-center gap-3 hover:border-nikou-green hover:shadow-md transition-all cursor-pointer group w-[150px] shrink-0 snap-start"
-            >
+            <div key={i} onClick={() => { setSelectedCategory(cat.title); handleStartBuying(); }} className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-xl p-4 flex flex-col items-center justify-center gap-3 hover:border-nikou-green hover:shadow-md transition-all cursor-pointer group w-[150px] shrink-0 snap-start">
               <div className="w-12 h-12 bg-[#F5F2EA] rounded-full flex items-center justify-center text-nikou-green group-hover:bg-[#E8EFE6] transition-colors duration-300">
                 <Package size={24} />
               </div>
@@ -298,7 +280,6 @@ export default function PublicMarketplacePage() {
         </div>
       </section>
 
-      {/* کالاها */}
       <section id="market-products" className="max-w-360 mx-auto px-16 py-8 w-full">
         <div className="flex justify-between items-end mb-8 w-full">
           <div className="flex flex-col items-end gap-1.5">
@@ -368,7 +349,6 @@ export default function PublicMarketplacePage() {
         )}
       </section>
 
-      {/* اصول اعتماد */}
       <section className="bg-nikou-dark py-16 w-full mt-10">
         <div className="max-w-360 mx-auto px-16 flex flex-col gap-10">
           <div className="flex justify-between items-center w-full">
@@ -398,8 +378,13 @@ export default function PublicMarketplacePage() {
       <section className="w-full bg-nikou-greenLight py-10">
         <div className="max-w-360 mx-auto px-16 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col items-end gap-2 text-right">
-            <h2 className="text-[27px] font-semibold text-nikou-dark">کالای مورد نظر خود را پیدا نکردید؟</h2>
-            <p className="text-[16px] text-nikou-textMuted">درخواست خرید خود را ثبت کنید تا فروشندگان به شما پیشنهاد قیمت بدهند.</p>
+            {/* 👈 متن داینامیک CTA */}
+            <h2 className="text-[27px] font-semibold text-nikou-dark">
+              {settings.cta_title || "کالای مورد نظر خود را پیدا نکردید؟"}
+            </h2>
+            <p className="text-[16px] text-nikou-textMuted">
+              {settings.cta_subtitle || "درخواست خرید خود را ثبت کنید تا فروشندگان به شما پیشنهاد قیمت بدهند."}
+            </p>
           </div>
           <Link href="/dashboard/requests/new" className="bg-nikou-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-2 shrink-0">
             ثبت درخواست خرید
@@ -416,8 +401,9 @@ export default function PublicMarketplacePage() {
               <div className="w-px h-6 bg-nikou-green"></div>
               <span className="text-[33px] font-extrabold leading-none mt-2">نیکو</span>
             </div>
+            {/* 👈 متن داینامیک فوتر */}
             <p className="text-nikou-textLight text-sm leading-relaxed max-w-md">
-              بازارگاه جامع تجارت نیکو، بستری امن و حرفه‌ای برای اتصال خریداران و فروشندگان عمده در سراسر کشور است. ما با ارائه ابزارهای مدرن، تجارت شما را متحول می‌کنیم.
+              {settings.footer_about || "بازارگاه جامع تجارت نیکو، بستری امن و حرفه‌ای برای اتصال خریداران و فروشندگان عمده در سراسر کشور است. ما با ارائه ابزارهای مدرن، تجارت شما را متحول می‌کنیم."}
             </p>
           </div>
           <div>

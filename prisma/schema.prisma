@@ -26,7 +26,7 @@ model User {
   reviewsReceived Review[]  @relation("Reviewee")
   reports         Report[]
   tickets         SupportTicket[]
-  notifications   Notification[] // 👈 رابطه جدید
+  notifications   Notification[]
 }
 
 model Profile {
@@ -290,15 +290,17 @@ model ContactMessage {
   createdAt DateTime @default(now())
 }
 
+// 👈 مدل Country با فیلدهای جدید (نوع و وضعیت فعال)
 model Country {
   id        String   @id @default(uuid())
   name      String   @unique
   code      String   @unique
   flag      String?
+  type      String   @default("COUNTRY") // COUNTRY یا BORDER_MARKET
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 }
 
-// 👈 مدل جدید اعلانات
 model Notification {
   id        String   @id @default(uuid())
   userId    String

@@ -7,6 +7,7 @@ import { ArrowRight, Package, UploadCloud, X } from "lucide-react";
 export default function NewProductPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
+  const [countriesList, setCountriesList] = useState<any[]>([]); // 👈 لیست داینامیک کشورها
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -15,7 +16,6 @@ export default function NewProductPage() {
   const [stockQuantity, setStockQuantity] = useState("");
   const [categoryId, setCategoryId] = useState(""); 
   const [country, setCountry] = useState("ایران");
-  const [currency, setCurrency] = useState("IRR"); // 👈 استیت جدید ارز
   
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -30,6 +30,18 @@ export default function NewProductPage() {
         if (Array.isArray(data)) {
           setCategories(data);
           if (data.length > 0) setCategoryId(data[0].id); 
+        }
+      })
+      .catch(() => {});
+
+    // 👈 دریافت کشورها از دیتابیس
+    fetch('/api/countries', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCountriesList(data);
+          const defaultCountry = data.find((c: any) => c.name === 'ایران') || data[0];
+          setCountry(defaultCountry.name);
         }
       })
       .catch(() => {});
@@ -76,7 +88,7 @@ export default function NewProductPage() {
         body: JSON.stringify({
           title, description, price: Number(price), unit,
           stockQuantity: Number(stockQuantity), categoryId,
-          country, currency, // 👈 ارسال کشور و ارز
+          country, // 👈 ارسال نام کشور
           sellerId: userId, imageUrl: uploadedImageUrl
         })
       });
@@ -140,13 +152,13 @@ export default function NewProductPage() {
                 </select>
               </div>
 
+              {/* 👈 انتخاب کشور داینامیک */}
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-nikou-dark">کشور مبدا *</label>
                 <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green bg-[#F5F2EA]">
-                  <option value="ایران">🇮🇷 ایران</option>
-                  <option value="امارات">🇦🇪 امارات</option>
-                  <option value="چین">🇨🇳 چین</option>
-                  <option value="ترکیه">🇹🇷 ترکیه</option>
+                  {countriesList.length > 0 ? countriesList.map((c) => (
+                    <option key={c.id} value={c.name}>{c.flag} {c.name}</option>
+                  )) : <option value="ایران">🇮🇷 ایران</option>}
                 </select>
               </div>
             </div>
@@ -156,28 +168,15 @@ export default function NewProductPage() {
               <textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="توضیحات کامل کالا، ابعاد و مشخصات..." className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green resize-none bg-[#F5F2EA]"></textarea>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="flex flex-col gap-2 md:col-span-1">
-                <label className="text-sm font-semibold text-nikou-dark">قیمت *</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-nikou-dark">قیمت (تومان) *</label>
                 <input type="number" required value={price} onChange={(e) => setPrice(e.target.value)} placeholder="مثلاً: 48000" className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green bg-[#F5F2EA]" />
               </div>
-              
-              {/* 👈 انتخاب واحد پول */}
-              <div className="flex flex-col gap-2 md:col-span-1">
-                <label className="text-sm font-semibold text-nikou-dark">واحد پول *</label>
-                <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green bg-[#F5F2EA]">
-                  <option value="IRR">تومان</option>
-                  <option value="USD">دلار</option>
-                  <option value="AED">درهم</option>
-                  <option value="CNY">یوان</option>
-                </select>
-              </div>
-
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-nikou-dark">واحد شمارش *</label>
-                <input type="text" required value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="مثلاً: عدد" className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green bg-[#F5F2EA]" />
+                <input type="text" required value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="مثلاً: عدد، کیلوگرم" className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green bg-[#F5F2EA]" />
               </div>
-
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-semibold text-nikou-dark">موجودی *</label>
                 <input type="number" required value={stockQuantity} onChange={(e) => setStockQuantity(e.target.value)} placeholder="مثلاً: 2000" className="w-full p-4 rounded-xl border border-[#DCDDD2] text-sm focus:outline-none focus:border-nikou-green bg-[#F5F2EA]" />
