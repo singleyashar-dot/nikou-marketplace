@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({ email: "", phone: "", password: "", roleName: "BUYER" });
+  // 👈 اضافه شدن country به استیت
+  const [formData, setFormData] = useState({ email: "", phone: "", password: "", roleName: "BUYER", country: "ایران" });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -29,7 +30,6 @@ export default function AuthPage() {
         if (!isLogin) {
           setTimeout(() => { setIsLogin(true); setMessage(""); }, 2000);
         } else {
-          // 👈 اصلاح شد: data.role به جای data.roles[0]
           localStorage.setItem('nikou_user_role', data.role || 'BUYER'); 
           localStorage.setItem('nikou_user_id', data.userId);
           setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
@@ -80,6 +80,21 @@ export default function AuthPage() {
                   >
                     <option value="BUYER">🛒 خریدار باشم (ثبت سفارش)</option>
                     <option value="SELLER">📦 فروشنده باشم (ثبت کالا)</option>
+                  </select>
+                </div>
+
+                {/* 👈 منوی انتخاب کشور */}
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">کشور محل فعالیت</label>
+                  <select 
+                    value={formData.country} 
+                    onChange={(e) => setFormData({...formData, country: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 outline-none transition bg-white"
+                  >
+                    <option value="ایران">🇮🇷 ایران</option>
+                    <option value="امارات">🇦🇪 امارات</option>
+                    <option value="چین">🇨🇳 چین</option>
+                    <option value="ترکیه">🇹🇷 ترکیه</option>
                   </select>
                 </div>
               </>

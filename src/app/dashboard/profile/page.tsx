@@ -6,7 +6,7 @@ import {
   BarChart3, Package, ShoppingCart, MessageSquare, 
   LogOut, RefreshCw, ShieldCheck, User, Camera, Save, 
   CheckCircle2, AlertCircle, ClipboardList, UserCircle,
-  Crown, Sparkles
+  Crown, Sparkles, Globe, Bell
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [country, setCountry] = useState("ایران"); // 👈 استیت جدید
   const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -35,10 +36,7 @@ export default function ProfilePage() {
     const id = localStorage.getItem('nikou_user_id');
     const userRole = localStorage.getItem('nikou_user_role');
     
-    if (!id) {
-      router.push('/login');
-      return;
-    }
+    if (!id) { router.push('/login'); return; }
     
     setUserId(id);
     setRole(userRole || 'BUYER');
@@ -50,6 +48,7 @@ export default function ProfilePage() {
           setEmail(data.email || "");
           setPhone(data.phone || "");
           setDisplayName(data.displayName || "");
+          setCountry(data.country || "ایران"); // 👈 ست کردن کشور
           setCity(data.city || "");
           setBio(data.bio || "");
           setAvatarUrl(data.avatarUrl || "");
@@ -68,9 +67,7 @@ export default function ProfilePage() {
     if (file) {
       setImageFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
+      reader.onloadend = () => setImagePreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -91,9 +88,7 @@ export default function ProfilePage() {
         if (uploadRes.ok) {
           finalAvatarUrl = uploadData.url;
           setAvatarUrl(finalAvatarUrl);
-        } else {
-          throw new Error("خطا در آپلود عکس");
-        }
+        } else { throw new Error("خطا در آپلود عکس"); }
       }
 
       setMessage("در حال ذخیره اطلاعات...");
@@ -101,12 +96,7 @@ export default function ProfilePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
-          displayName,
-          phone,
-          city,
-          bio,
-          avatarUrl: finalAvatarUrl
+          userId, displayName, phone, country, city, bio, avatarUrl: finalAvatarUrl // 👈 ارسال کشور
         })
       });
 
@@ -123,15 +113,11 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/');
-  };
+  const handleLogout = () => { localStorage.clear(); router.push('/'); };
 
   const switchRole = async () => {
     const currentRole = localStorage.getItem('nikou_user_role') || 'BUYER';
     const nextRole = currentRole === 'SELLER' ? 'BUYER' : 'SELLER';
-    
     if (userId) {
       await fetch('/api/user/role', {
         method: 'POST',
@@ -148,7 +134,6 @@ export default function ProfilePage() {
   return (
     <div className="flex h-screen bg-nikou-cream font-sans" dir="rtl">
       
-      {/* سایدبار */}
       <aside className="w-64 bg-nikou-dark text-white flex flex-col shadow-2xl z-20 hidden md:flex shrink-0">
         <div className="h-24 flex items-center justify-center border-b border-white/10 px-4">
           <Link href="/" className="flex items-center gap-3">
@@ -181,6 +166,9 @@ export default function ProfilePage() {
           <Link href="/dashboard/messages" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
             <MessageSquare size={20} /><span className="text-sm">پیام‌ها</span>
           </Link>
+          <Link href="/dashboard/notifications" className="flex items-center gap-3 text-nikou-textLight hover:bg-white/5 hover:text-white px-4 py-3 rounded-xl transition-colors">
+            <Bell size={20} /><span className="text-sm">اعلانات</span>
+          </Link>
           <Link href="/dashboard/profile" className="flex items-center gap-3 bg-white/10 text-white px-4 py-3 rounded-xl cursor-pointer">
             <UserCircle size={20} className="text-nikou-green" /><span className="font-semibold text-sm">پروفایل من</span>
           </Link>
@@ -210,20 +198,16 @@ export default function ProfilePage() {
         </div>
       </aside>
 
-      {/* بخش اصلی */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-24 bg-[#FFFEFA] border-b border-[#DCDDD2] flex items-center justify-between px-8 shrink-0">
           <h1 className="text-2xl font-bold text-nikou-dark flex items-center gap-2">
-            <UserCircle size={24} className="text-nikou-green" />
-            پروفایل من
+            <UserCircle size={24} className="text-nikou-green" />پروفایل من
           </h1>
         </header>
 
         <div className="flex-1 overflow-y-auto p-8">
-          {/* 👈 عرض کلی فرم کمتر شد تا متمرکزتر باشه (max-w-3xl) */}
           <div className="max-w-3xl mx-auto flex flex-col gap-5">
             
-            {/* 👈 کارت وضعیت اشتراک (فشرده‌تر و مینیمال‌تر) */}
             <div className={`rounded-2xl border p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 relative overflow-hidden ${plan === 'PRO' ? 'bg-nikou-dark border-nikou-green/30 text-white' : 'bg-[#FFFEFA] border-[#DCDDD2]'}`}>
               {plan === 'PRO' && <div className="absolute top-0 right-0 w-64 h-64 bg-nikou-green rounded-full blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>}
               
@@ -256,18 +240,12 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* فرم اطلاعات */}
             <div className="bg-[#FFFEFA] border border-[#DCDDD2] rounded-2xl shadow-sm p-6 md:p-8">
               <form onSubmit={handleSave} className="flex flex-col gap-6">
                 
-                {/* 👈 بخش آواتار (کوچیک‌تر و فشرده‌تر) */}
                 <div className="flex flex-col items-center gap-3 border-b border-[#DCDDD2] pb-6">
                   <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-[#E8EFE6] bg-[#F5F2EA] flex items-center justify-center group">
-                    {imagePreview ? (
-                      <img src={imagePreview} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <User size={36} className="text-nikou-green opacity-50" />
-                    )}
+                    {imagePreview ? <img src={imagePreview} alt="Avatar" className="w-full h-full object-cover" /> : <User size={36} className="text-nikou-green opacity-50" />}
                     <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                       <Camera size={20} className="text-white" />
                       <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
@@ -276,7 +254,6 @@ export default function ProfilePage() {
                   <p className="text-[13px] text-nikou-textMuted font-medium">برای تغییر عکس، روی آن کلیک کنید</p>
                 </div>
 
-                {/* 👈 فیلدها (ارتفاع کمتر و فاصله بهینه) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[13px] font-semibold text-nikou-dark">ایمیل (غیرقابل تغییر)</label>
@@ -291,6 +268,17 @@ export default function ProfilePage() {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[13px] font-semibold text-nikou-dark">نام نمایشی (نام و نام خانوادگی) *</label>
                     <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="مثلاً: علی رضایی" className="w-full py-3 px-4 rounded-xl border border-[#DCDDD2] text-[14px] focus:outline-none focus:border-nikou-green bg-[#F5F2EA]" />
+                  </div>
+
+                  {/* 👈 فیلد انتخاب کشور */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[13px] font-semibold text-nikou-dark flex items-center gap-1"><Globe size={14} /> کشور</label>
+                    <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full py-3 px-4 rounded-xl border border-[#DCDDD2] text-[14px] focus:outline-none focus:border-nikou-green bg-[#F5F2EA]">
+                      <option value="ایران">🇮🇷 ایران</option>
+                      <option value="امارات">🇦🇪 امارات</option>
+                      <option value="چین">🇨🇳 چین</option>
+                      <option value="ترکیه">🇹🇷 ترکیه</option>
+                    </select>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
