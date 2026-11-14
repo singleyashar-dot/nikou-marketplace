@@ -351,7 +351,9 @@ export default function PublicMarketplacePage() {
                   <span className="text-nikou-textMuted text-[12px] mb-2">{p.seller?.email || 'فروشنده'}</span>
                   <h3 className="font-semibold text-nikou-dark text-[20px] leading-[1.8] text-right w-full truncate">{p.title}</h3>
                   <div className="flex justify-end items-baseline gap-2 mt-1 w-full">
-                    <span className="text-nikou-textMuted text-[12px]">تومان</span>
+                    <span className="text-nikou-textMuted text-[12px]">
+                      {p.currency === 'USD' ? 'دلار' : p.currency === 'AED' ? 'درهم' : p.currency === 'CNY' ? 'یوان' : 'تومان'}
+                    </span>
                     <span className="text-nikou-dark text-[24px] font-semibold">{p.price ? p.price.toLocaleString() : '0'}</span>
                   </div>
                   <div className="w-full h-px bg-[#DCDDD2] my-4"></div>

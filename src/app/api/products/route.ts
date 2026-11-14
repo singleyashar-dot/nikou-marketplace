@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { title, description, price, unit, stockQuantity, categoryId, country, sellerId, imageUrl } = body;
+    const { title, description, price, unit, stockQuantity, categoryId, country, currency, sellerId, imageUrl } = body;
 
     if (!title || !sellerId) return NextResponse.json({ error: "عنوان و فروشنده الزامی است" }, { status: 400 });
 
@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       data: {
         title, description, price: Number(price) || 0, unit: unit || 'عدد',
         stockQuantity: Number(stockQuantity) || 0, categoryId: categoryId || null,
-        country: country || 'ایران', // 👈 ذخیره کشور
+        country: country || 'ایران', 
+        currency: currency || 'IRR', // 👈 ذخیره ارز
         sellerId: sellerId,
         media: imageUrl ? { create: { url: imageUrl } } : undefined
       }
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const body = await req.json();
-    const { id, title, description, price, unit, stockQuantity, categoryId, country, imageUrl } = body;
+    const { id, title, description, price, unit, stockQuantity, categoryId, country, currency, imageUrl } = body;
 
     if (!id) return NextResponse.json({ error: "شناسه کالا یافت نشد" }, { status: 400 });
 
@@ -50,7 +51,8 @@ export async function PUT(req: Request) {
       data: {
         title, description, price: Number(price) || 0, unit: unit || 'عدد',
         stockQuantity: Number(stockQuantity) || 0, categoryId: categoryId || null,
-        country: country || 'ایران', // 👈 آپدیت کشور
+        country: country || 'ایران', 
+        currency: currency || 'IRR', // 👈 آپدیت ارز
       }
     });
 
